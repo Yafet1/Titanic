@@ -1,0 +1,219 @@
+---
+title: "Titanic"
+author: "Yafet A Mekonnen"
+date: "10/27/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE, echo=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+suppressMessages(library(tidyverse))
+library(tibble)
+library(dplyr)
+
+```
+
+`Introduction`
+
+   The sinking of the Titanic is one of the most famous shipwrecks in history. On April 15 1912, the mostly known unsinkable Titanic ship sank after colliding with an iceberg. Due to the lack of lifeboats, 1502 out of 2240 passengers and crew lost their life. I am interested in this dataset to see how humans handle life and death situations when they have to make the tough choice of who gets on the lifeboat. 
+
+```{r}
+titanic <- (read.csv("~/Desktop/titanic.csv"))
+```
+
+
+   This dataset comes from a source called Vanderbilt Biostatistics Datasets which is an online community where data scientists go to find useful datasets. The limitation to this dataset is that it includes 1309 passengers data while the titanic ship had 2240 passengers, which means 931 passengers data is missing. 
+
+
+  * `pclass`: passenger class; proxy for socio-economic status (1st ~ upper, 2nd ~ middle, 3rd ~ lower)
+  * `survived`: survival status (0=No, 1=Yes) they are represented as binary since there are only two choice 0 for not surivied and 1 for surivied 
+   * `name`: passenger name
+   * `sex`: passenger sex (male, female)
+  * `age`: passenger age in years (fractional if age is less than 1 and if age is estimated, it is in the form xx.5)
+   * `sibsp`: number of siblings/spouses aboard (includes step-siblings, mistresses and fiances ignored)
+   * `parch`: number of parents/children aboard (parent only considers mother or father and child includes stepchildren)
+   * `ticket`: ticket number
+   * `fare`: passenger fare (in pre-1970 British pounds)
+   * `cabin`: cabin number
+   * `embarked`: port of embarkation (C=Cherbourg, Q=Queenstown, S=Southampton)
+   * `boat`: lifeboat number (if passenger boarded one)
+   * `body`: body identification number
+   * `home.dest`: passenger home/destination
+
+ 
+```{r}
+titanic_new <- subset(titanic,select = -c(name,sibsp,parch,ticket,cabin,boat,body,home.dest,embarked))
+```
+I chose to remove columns like name,sibsp,parch,ticket,cabin,boat,body,home.dest and embarked since they are not going to be useful for the purpose of the visualization
+
+
+```{r}
+colSums(is.na(titanic_new)) # see any missing vaules 
+
+```
+Above we can clearly see that age column got 263 missing vaules and fare column has 1 missing vaule
+
+```{r}
+titanic_new$fare[is.na(titanic_new$fare)] <-mean(na.omit(titanic_new$fare))
+
+```
+Replace the missing vaule in fare with the mean 
+
+
+
+```{r}
+titanic_new$age[is.na(titanic_new$age)] <-median(na.omit(titanic_new$age))
+
+```
+ 
+ Replace the missing vaules in age with the median vaule 
+ 
+```{r}
+colSums(is.na(titanic_new)) # see any missing vaules 
+
+```
+ 
+ 
+ 
+```{r}
+titanic_new$survived[titanic_new$survived == "1"] <- "Alive"
+titanic_new$survived[titanic_new$survived == "0"] <- "Deceased"
+
+```
+Replace the vaules for survived column from 1 to Alive and from 0 to Deceased.
+
+```{r}
+max_age <- max(titanic_new$age)
+max_age
+```
+
+
+```{r}
+titanic_new$age[titanic_new$age < 19 ] <- "Young"
+
+titanic_new$age[titanic_new$age >= 19 & titanic_new$age <= 50 ] <- "Adult"
+
+titanic_new$age[titanic_new$age >= 51 & titanic_new$age <= max_age ] <- "Older"
+
+```
+ Breaking down the age column by separating into three different categories which is the age less than 19 to be called Young, the age between 19 and 50 to be Adult and above 50 to be Older age group. 
+
+```{r}
+titanic_new$pclass[titanic_new$pclass == "1"] <- "Upper Class"
+
+titanic_new$pclass[titanic_new$pclass == "2"] <- "Middle Class"
+
+titanic_new$pclass[titanic_new$pclass == "3"] <- "Lower Class"
+
+
+```
+Changing the socio-economic status from 1 to Upper Class, 2 to Middle Class and 3 to the Lower class. This will be helpful for better understanding the graphs below and creating improved visualization. 
+
+
+
+```{r}
+head(titanic_new)
+```
+ 
+
+
+```{r}
+ggplot(titanic_new, aes(x=survived)) + geom_bar() + labs(y = "Count of Passengers", title = "Survival Rates In Titanic")  
+```
+Above it can be seen clearly that the majority of the passengers did not survive the shipwrecks
+
+```{r}
+table(titanic_new$survived) 
+prop.table(table(titanic_new$survived))*100
+nrow(titanic_new)
+```
+Only 38% of the passengers which is 500 passengers survived the shipwrecks and the rest 61.8 % which is 809 did not survive. 
+ 
+ 
+```{r}
+ggplot(titanic_new, aes(x=sex, fill=survived)) + geom_bar(position = "dodge") + labs(y = "Count of Passengers", title = "Survival Rates In Titanic by Gender")  
+
+```
+The graph above indicates that most male passengers did not survive and most females survived this is because only females were allowed to board the lifeboats first. 
+
+
+```{r}
+table(titanic_new$survived , titanic_new$sex) 
+prop.table(table(titanic_new$survived , titanic_new$sex))*100
+
+```
+Above you can see that 682 males did not survive which is 52% and 161 which is 12 % male survive where 127 females which are 9 % did not survive and 339 females which are 25% survive. 
+
+
+
+```{r}
+
+titanic_new$pclass <- factor(titanic_new$pclass, levels = c("Upper Class","Middle Class","Lower Class"))
+
+ggplot(titanic_new, aes(x = pclass, fill = survived)) + geom_bar(position = "dodge") + labs(y = "Count of Passengers", title = "Survival Rates In Titanic by Socio-Economic Status")  
+```
+If you look at the socio-economic class the majority group where there is a high death rate is in a lower class. It also shows that most of the passengers are in were in the lower class. Upper class passengers have a higher survival rate. 
+
+
+
+```{r}
+table(titanic_new$survived , titanic_new$pclass)
+prop.table(table(titanic_new$survived , titanic_new$pclass))*100
+
+```
+Above it shows that 123 passengers in upper class which is 9%  did not survive and 200 which is 15% survive. In the second class, 158 passengers which are 12% did not survive and 119 which is 9% survive. In the third class where the majority of passengers were located 528 which is 40% did not survive and 181 which is 13% survived. 
+
+
+
+```{r}
+ggplot(titanic_new, aes(x=sex, fill = survived)) + facet_wrap(~pclass) + geom_bar(position = "dodge")  + labs(y = "Count of Passengers", title = "Survival Rates In Titanic by Socio-Economic Status within Gender") 
+```
+
+The above graph indicates that males that are in the lower class are the majority group who did not survive and females in upper class are the ones that survived the most. 
+
+
+```{r}
+titanic_new$age <- factor(titanic_new$age, levels = c("Young","Adult","Older"))
+
+ggplot(titanic_new, aes(x=age, fill = survived)) + facet_wrap(~pclass) + geom_bar(position = "dodge")  + labs(y = "Count of Passengers", title = "Survival Rates In Titanic by Socio-Economic Status within Age")  
+
+
+```
+It can be seen that Adults in all socio-economic class is the age group that did not survive. Adult age group also has the highest count of passengers. 
+
+
+```{r}
+table(titanic_new$survived , titanic_new$age)
+prop.table(table(titanic_new$survived , titanic_new$age))*100
+
+```
+Above it shows that 101 passengers in Young age group which is 7%  did not survive and 95 which is 7% survive. In the Adult age group, where the majority of passengers were located  651 passengers which are 49% did not survive and 367 which is 28% survive. In the Old age group 57 which is 4% did not survive and 38 which is 2.9% survived. 
+
+
+
+```{r}
+max(titanic_new$fare)
+```
+
+
+
+```{r}
+ggplot(titanic_new) + geom_point(mapping = aes(x=pclass, y=fare, color=survived)) + facet_wrap(~sex) + ylim(0,300) + labs(title = "Survival Rates In Titanic by Socio-Economic Status and Fare within Gender")  
+
+```
+
+
+This graph looks at the price each passenger paid by looking at their socio-economic class and within different gender There was an outliner where is a passenger that paid 512 pounds I chose not to include that in the graph and set intervals between 0 to 300 pounds.  Females who paid the highest amount for the ticket have the highest probability of surviving but females who paid the cheapest amount which was placed in the lower class have a lower survival rate.  Males overall have the highest death rate does not matter how much they paid for their ticket. 
+
+
+
+
+
+
+
+
+
+
